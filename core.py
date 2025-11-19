@@ -2,16 +2,13 @@
 import os
 import random
 import requests
-from typing import Tuple
+from typing import Tuple, Union, Dict
 
 ROOT = os.path.dirname(os.path.abspath(__file__))
 TOKEN_FILE = os.path.join(ROOT, "token.txt")
 REQUEST_TIMEOUT = 180  # cố định theo yêu cầu
 
 def load_tokens(path: str = TOKEN_FILE):
-    """
-    Đọc token.txt (mỗi dòng 1 token). Nếu không có file, trả [].
-    """
     if not os.path.exists(path):
         return []
     with open(path, "r", encoding="utf-8") as f:
@@ -19,13 +16,9 @@ def load_tokens(path: str = TOKEN_FILE):
     return tokens
 
 def pick_token(tokens):
-    """Chọn 1 token ngẫu nhiên (None nếu tokens rỗng)."""
     return random.choice(tokens) if tokens else None
 
 def build_payload_and_headers(tiktok_id: str, api_token: str) -> Tuple[dict, dict, dict]:
-    """
-    Trả về headers, cookies, data giống mẫu (giữ cookie như user yêu cầu).
-    """
     link = f"https://www.tiktok.com/@{tiktok_id}"
 
     cookies = {
@@ -67,14 +60,19 @@ def build_payload_and_headers(tiktok_id: str, api_token: str) -> Tuple[dict, dic
 
     return headers, cookies, data
 
-def call_upstream(headers: dict, cookies: dict, data: dict, timeout: int = REQUEST_TIMEOUT):
+def call_upstream(headers: dict, cookies: dict, data: dict, timeout: int = REQUEST_TIMEOUT) -> Tuple[int, Union[dict, bytes, str], bool, Dict[str,str]]:
     """
-    Gọi upstream like.vn. Trả (status_code, content, is_json).
+    Gọi like.vn với timeout. Trả về:
+      (status_code, content, is_json, response_headers)
+    content là dict nếu is_json True, else là bytes (raw) -> caller sẽ decide media type.
+    response_headers là dict của upstream response headers (dùng để lấy content-type).
     """
     url = "https://like.vn/api/mua-follow-tiktok/order"
     resp = requests.post(url, headers=headers, cookies=cookies, data=data, timeout=timeout)
+    resp_headers = {k.lower(): v for k, v in resp.headers.items()}
     try:
-        return resp.status_code, resp.json(), True
+        js = resp.json()
+        return resp.status_code, js, True, resp_headers
     except ValueError:
-        return resp.status_code, resp.text, False
-
+        # trả raw bytes để giữ nguyên HTML & encoding
+        return resp.status_code, resp.content, False, resp_headers
