@@ -77,3 +77,4 @@ def call_upstream(headers: dict, cookies: dict, data: dict, timeout: int = REQUE
         return resp.status_code, resp.json(), True
     except ValueError:
         return resp.status_code, resp.text, False
+
