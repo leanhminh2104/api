@@ -1,0 +1,13 @@
+{
+  "version": 2,
+  "functions": {
+    "api/order.py": {
+      "runtime": "python3.11",
+      "maxDuration": 180
+    }
+  },
+  "routes": [
+    { "src": "/api/order", "dest": "/api/order.py" },
+    { "src": "/api/order/?", "dest": "/api/order.py" }
+  ]
+}
