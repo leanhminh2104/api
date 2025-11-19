@@ -9,7 +9,7 @@ TOKEN_FILE = os.path.join(ROOT, "token.txt")
 REQUEST_TIMEOUT = 180  # bắt buộc 180s
 
 def load_tokens(path: str = TOKEN_FILE):
-    """Đọc token.txt, mỗi dòng 1 token, bỏ dòng rỗng"""
+    """Đọc token.txt, mỗi dòng 1 token, bỏ dòng rỗng."""
     if not os.path.exists(path):
         return []
     with open(path, "r", encoding="utf-8") as f:
@@ -17,11 +17,11 @@ def load_tokens(path: str = TOKEN_FILE):
     return tokens
 
 def pick_token(tokens):
-    """Chọn ngẫu nhiên 1 token"""
+    """Chọn 1 token ngẫu nhiên."""
     return random.choice(tokens) if tokens else None
 
 def build_payload_and_headers(tiktok_id: str, api_token: str) -> Tuple[dict, dict, dict]:
-    """Trả về (headers, cookies, data) - giữ cookie giống mẫu"""
+    """Trả về (headers, cookies, data) để gọi like.vn."""
     link = f"https://www.tiktok.com/@{tiktok_id}"
 
     cookies = {
@@ -64,7 +64,7 @@ def build_payload_and_headers(tiktok_id: str, api_token: str) -> Tuple[dict, dic
     return headers, cookies, data
 
 def call_upstream(headers: dict, cookies: dict, data: dict, timeout: int = REQUEST_TIMEOUT):
-    """Gọi like.vn, timeout = 180s, trả về (status_code, content, is_json)"""
+    """Gọi like.vn, timeout = 180s, trả về (status_code, content, is_json)."""
     url = "https://like.vn/api/mua-follow-tiktok/order"
     resp = requests.post(url, headers=headers, cookies=cookies, data=data, timeout=timeout)
     try:
