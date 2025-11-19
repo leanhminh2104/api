@@ -10,7 +10,7 @@ def home():
     return {"status": "ok", "message": "Service running"}
 
 @app.get("/api/order")
-def order(id: str = Query(..., description="TikTok id, không kèm @"),
+def order(id: str = Query(..., description="TikTok id (không kèm @)"),
           key: str = Query(..., description="phải là 'dichvusale-io-vn'")):
     # kiểm tra key
     if key != "dichvusale-io-vn":
@@ -28,7 +28,6 @@ def order(id: str = Query(..., description="TikTok id, không kèm @"),
     except Exception as e:
         return JSONResponse(status_code=502, content={"status": "error", "message": f"Upstream request failed: {str(e)}"})
 
-    # Trả nguyên content upstream (JSON -> trả JSON nguyên, text -> trả {"raw": "..."})
     if is_json:
         return JSONResponse(status_code=status_code, content=content)
     else:
