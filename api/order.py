@@ -1,70 +1,40 @@
+# api/order.py
 from fastapi import FastAPI, Query, HTTPException
 from fastapi.responses import JSONResponse
-import requests
-import random
+import sys
 import os
-import json
 
-app = FastAPI()
+# ensure repo root on path so core.py ở root được import
+ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+if ROOT not in sys.path:
+    sys.path.append(ROOT)
 
-TOKEN_FILE = os.path.join(os.path.dirname(__file__), "..", "token.txt")
-REQUEST_TIMEOUT = 180
+import core
 
-def load_tokens(path):
-    if not os.path.exists(path):
-        return []
-    with open(path, "r", encoding="utf-8") as f:
-        return [x.strip() for x in f.readlines() if x.strip()]
-
-def build_likevn_request(tiktok_id: str, api_token: str):
-    link = f"https://www.tiktok.com/@{tiktok_id}"
-
-    headers = {
-        "accept": "application/json",
-        "api-token": api_token,
-        "content-type": "application/x-www-form-urlencoded;charset=UTF-8",
-        "user-agent": "Mozilla/5.0",
-    }
-
-    data = {
-        "objectId": link,
-        "server_order": "6",
-        "free": "1",
-        "giftcode": "",
-        "amount": "10",
-        "note": "",
-    }
-
-    return headers, {}, data
+app = FastAPI(title="LikeVN Order API (vercel)")
 
 @app.get("/")
-def index():
-    return {"status": "ok", "message": "Order API online"}
+def root():
+    return {"status": "ok", "message": "Order endpoint"}
 
 @app.get("/order")
 def order(id: str = Query(...), key: str = Query(...)):
     if key != "dichvusale-io-vn":
         raise HTTPException(status_code=403, detail="Invalid key")
 
-    tokens = load_tokens(TOKEN_FILE)
+    tokens = core.load_tokens()
     if not tokens:
         raise HTTPException(status_code=500, detail="token.txt empty")
 
-    chosen = random.choice(tokens)
-    headers, cookies, data = build_likevn_request(id, chosen)
+    chosen = core.pick_token(tokens)
+    headers, cookies, data = core.prepare_request(id, chosen)
 
     try:
-        r = requests.post(
-            "https://like.vn/api/mua-follow-tiktok/order",
-            headers=headers,
-            cookies=cookies,
-            data=data,
-            timeout=REQUEST_TIMEOUT
-        )
-    except requests.Timeout:
-        return {"status": "error", "message": "Upstream timeout"}
+        status_code, content, is_json = core.call_likevn(headers, cookies, data)
+    except Exception as e:
+        return JSONResponse(status_code=502, content={"status": "error", "message": f"Upstream request failed: {str(e)}"})
 
-    try:
-        return r.json()
-    except:
-        return {"raw": r.text}
+    if is_json:
+        return JSONResponse(status_code=status_code, content=content)
+    else:
+        return JSONResponse(status_code=status_code, content={"raw": content})
