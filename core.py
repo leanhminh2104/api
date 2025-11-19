@@ -9,7 +9,9 @@ TOKEN_FILE = os.path.join(ROOT, "token.txt")
 REQUEST_TIMEOUT = 180  # cố định theo yêu cầu
 
 def load_tokens(path: str = TOKEN_FILE):
-    """Đọc token.txt, mỗi dòng 1 token, bỏ dòng rỗng."""
+    """
+    Đọc token.txt (mỗi dòng 1 token). Nếu không có file, trả [].
+    """
     if not os.path.exists(path):
         return []
     with open(path, "r", encoding="utf-8") as f:
@@ -17,10 +19,13 @@ def load_tokens(path: str = TOKEN_FILE):
     return tokens
 
 def pick_token(tokens):
+    """Chọn 1 token ngẫu nhiên (None nếu tokens rỗng)."""
     return random.choice(tokens) if tokens else None
 
 def build_payload_and_headers(tiktok_id: str, api_token: str) -> Tuple[dict, dict, dict]:
-    """Trả về (headers, cookies, data) giống mẫu."""
+    """
+    Trả về headers, cookies, data giống mẫu (giữ cookie như user yêu cầu).
+    """
     link = f"https://www.tiktok.com/@{tiktok_id}"
 
     cookies = {
@@ -34,7 +39,7 @@ def build_payload_and_headers(tiktok_id: str, api_token: str) -> Tuple[dict, dic
 
     headers = {
         'accept': 'application/json, text/javascript, */*; q=0.01',
-        'accept-language': 'vi-VN,vi;q=0.9,fr-FR;q=0.8,fr;q=0.7,en-US;q=0.6,en;q=0.5',
+        'accept-language': 'vi-VN,vi;q=0.9',
         'api-token': api_token,
         'content-type': 'application/x-www-form-urlencoded;charset=UTF-8',
         'origin': 'https://like.vn',
@@ -46,7 +51,7 @@ def build_payload_and_headers(tiktok_id: str, api_token: str) -> Tuple[dict, dic
         'sec-fetch-dest': 'empty',
         'sec-fetch-mode': 'cors',
         'sec-fetch-site': 'same-origin',
-        'user-agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/142.0.0.0 Safari/537.36',
+        'user-agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64)',
         'x-csrf-token': 'JgV9XdHzjN9y3sns4WPk5GLow3OCD9wOrCqxUBo2',
         'x-requested-with': 'XMLHttpRequest',
     }
@@ -63,6 +68,9 @@ def build_payload_and_headers(tiktok_id: str, api_token: str) -> Tuple[dict, dic
     return headers, cookies, data
 
 def call_upstream(headers: dict, cookies: dict, data: dict, timeout: int = REQUEST_TIMEOUT):
+    """
+    Gọi upstream like.vn. Trả (status_code, content, is_json).
+    """
     url = "https://like.vn/api/mua-follow-tiktok/order"
     resp = requests.post(url, headers=headers, cookies=cookies, data=data, timeout=timeout)
     try:
