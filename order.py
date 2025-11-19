@@ -1,14 +1,10 @@
 # api/order.py
 from fastapi import FastAPI, Query, HTTPException
 from fastapi.responses import JSONResponse
-import sys, os, random
+import sys, os, random, requests
+
+# ensure repo root on path to import core if needed (we put all logic here to be self-contained)
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-if ROOT not in sys.path:
-    sys.path.append(ROOT)
-
-import requests
-
-# config
 TOKEN_FILE = os.path.join(ROOT, "token.txt")
 REQUEST_TIMEOUT = 180
 
@@ -63,21 +59,32 @@ def build_headers_cookies_data(tiktok_id, api_token):
     }
     return headers, cookies, data
 
+@app.get("/")
+def index():
+    return {"status": "ok", "message": "Order endpoint"}
+
 @app.get("/order")
 def order(id: str = Query(...), key: str = Query(...)):
+    # check key strict
     if key != "dichvusale-io-vn":
         raise HTTPException(status_code=403, detail="Invalid key")
+
     tokens = load_tokens()
     if not tokens:
         raise HTTPException(status_code=500, detail="token.txt empty")
+
     token = pick_token(tokens)
     headers, cookies, data = build_headers_cookies_data(id, token)
+
     try:
-        r = requests.post("https://like.vn/api/mua-follow-tiktok/order", headers=headers, cookies=cookies, data=data, timeout=REQUEST_TIMEOUT)
+        r = requests.post("https://like.vn/api/mua-follow-tiktok/order",
+                          headers=headers, cookies=cookies, data=data, timeout=REQUEST_TIMEOUT)
     except requests.Timeout:
         return JSONResponse(status_code=504, content={"status":"error","message":"Upstream timeout (180s)"})
     except Exception as e:
         return JSONResponse(status_code=502, content={"status":"error","message":str(e)})
+
+    # trả nguyên response upstream
     try:
         return JSONResponse(status_code=r.status_code, content=r.json())
     except:
