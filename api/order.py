@@ -4,17 +4,17 @@ from fastapi.responses import JSONResponse
 import sys
 import os
 
-# ensure repo root on path so core.py ở root được import
+# add repo root to path để import core.py
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 if ROOT not in sys.path:
     sys.path.append(ROOT)
 
 import core
 
-app = FastAPI(title="LikeVN Order API (vercel)")
+app = FastAPI()
 
 @app.get("/")
-def root():
+def index():
     return {"status": "ok", "message": "Order endpoint"}
 
 @app.get("/order")
@@ -27,10 +27,10 @@ def order(id: str = Query(...), key: str = Query(...)):
         raise HTTPException(status_code=500, detail="token.txt empty")
 
     chosen = core.pick_token(tokens)
-    headers, cookies, data = core.prepare_request(id, chosen)
+    headers, cookies, data = core.build_payload_and_headers(id, chosen)
 
     try:
-        status_code, content, is_json = core.call_likevn(headers, cookies, data)
+        status_code, content, is_json = core.call_upstream(headers, cookies, data)
     except Exception as e:
         return JSONResponse(status_code=502, content={"status": "error", "message": f"Upstream request failed: {str(e)}"})
 
